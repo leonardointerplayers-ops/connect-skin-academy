@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * Diagnóstico de configuração (sem expor segredos): Supabase alcançável,
  * migrações executadas e quantidade de usuários. Usado no setup inicial.
  */
-export async function GET() {
+export async function GET(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const report: Record<string, unknown> = {
     supabaseProject: url ? new URL(url).hostname.split(".")[0] : null,
@@ -41,6 +41,19 @@ export async function GET() {
     report.authUsersConfirmed = users.error ? null : users.data.users.filter((u) => u.email_confirmed_at).length;
   } catch (err) {
     report.adminError = err instanceof Error ? err.message : String(err);
+  }
+
+  const token = new URL(request.url).searchParams.get("token");
+  if (token && process.env.CRON_SECRET && token === process.env.CRON_SECRET) {
+    try {
+      const { data } = await createAdminClient()
+        .from("audit_logs")
+        .select("created_at, entity_id, summary, changes")
+        .eq("action", "system.error")
+        .order("created_at", { ascending: false })
+        .limit(10);
+      report.recentErrors = data;
+    } catch {}
   }
 
   return NextResponse.json(report, { headers: { "cache-control": "no-store" } });

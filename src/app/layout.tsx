@@ -13,6 +13,7 @@ export const metadata: Metadata = {
   description: APP_CONFIG.tagline,
   robots: { index: false, follow: false },
   applicationName: APP_CONFIG.name,
+  other: { google: "notranslate" },
 };
 
 export const viewport: Viewport = {
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html lang="pt-BR" translate="no" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full bg-background">
         <TooltipProvider delayDuration={200}>{children}</TooltipProvider>
         <Toaster richColors position="top-center" />
