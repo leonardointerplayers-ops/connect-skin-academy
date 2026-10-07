@@ -35,7 +35,7 @@ export default async function LessonEditorPage({ params }: PageProps<"/admin/con
                 <Eye /> Visualizar
               </Link>
             </Button>
-            <DuplicateButton action={duplicateLessonAction.bind(null, lesson.id)} hrefFor={(nid) => `/admin/conteudos/aulas/${nid}`} />
+            <DuplicateButton action={duplicateLessonAction.bind(null, lesson.id)} hrefPrefix="/admin/conteudos/aulas/" />
             <DeleteButton
               action={deleteLessonAction.bind(null, lesson.id)}
               title="Excluir esta aula?"

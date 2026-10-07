@@ -29,7 +29,7 @@ export default async function ModuleEditorPage({ params }: PageProps<"/admin/con
         title={mod.title}
         actions={
           <>
-            <DuplicateButton action={duplicateModuleAction.bind(null, mod.id)} hrefFor={(nid) => `/admin/conteudos/modulos/${nid}`} />
+            <DuplicateButton action={duplicateModuleAction.bind(null, mod.id)} hrefPrefix="/admin/conteudos/modulos/" />
             <DeleteButton
               action={deleteModuleAction.bind(null, mod.id)}
               title="Excluir este módulo?"

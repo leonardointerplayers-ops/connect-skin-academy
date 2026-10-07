@@ -28,7 +28,7 @@ export default async function QuestionPage({ params }: PageProps<"/admin/avaliac
         title="Editar questão"
         actions={
           <>
-            <DuplicateButton action={duplicateQuestionAction.bind(null, question.id)} hrefFor={(nid) => `/admin/avaliacoes/questoes/${nid}`} />
+            <DuplicateButton action={duplicateQuestionAction.bind(null, question.id)} hrefPrefix="/admin/avaliacoes/questoes/" />
             <DeleteButton
               label={answersCount ? "Arquivar" : "Excluir"}
               action={archiveQuestionAction.bind(null, question.id)}

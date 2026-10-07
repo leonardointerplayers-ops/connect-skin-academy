@@ -20,12 +20,13 @@ import type { ActionResult } from "@/lib/actions";
 
 export function DuplicateButton({
   action,
-  hrefFor,
+  hrefPrefix,
   label = "Duplicar",
   size = "sm",
 }: {
   action: () => Promise<ActionResult<{ id: string }>>;
-  hrefFor: (id: string) => string;
+  /** Ex.: "/admin/conteudos/aulas/" — o id criado é anexado. */
+  hrefPrefix: string;
   label?: string;
   size?: "sm" | "icon-sm";
 }) {
@@ -44,7 +45,7 @@ export function DuplicateButton({
           const res = await action();
           if (res.ok && res.data) {
             toast.success(res.message);
-            router.push(hrefFor(res.data.id));
+            router.push(`${hrefPrefix}${res.data.id}`);
           } else if (!res.ok) toast.error(res.error);
         })
       }

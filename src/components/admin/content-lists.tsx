@@ -49,7 +49,7 @@ export function CourseModulesList({ courseId, modules, canEdit }: { courseId: st
               size="icon-sm"
               label="Duplicar módulo"
               action={() => duplicateModuleAction(m.id)}
-              hrefFor={(id) => `/admin/conteudos/modulos/${id}`}
+              hrefPrefix="/admin/conteudos/modulos/"
             />
           )}
           <ChevronRight className="size-4 text-muted-foreground" />
@@ -104,7 +104,7 @@ export function ModuleLessonsList({ moduleId, lessons, canEdit }: { moduleId: st
           {!l.is_required && <Badge variant="outline">Opcional</Badge>}
           <StatusBadge status={l.status} className="hidden sm:inline-flex" />
           {canEdit && (
-            <DuplicateButton size="icon-sm" label="Duplicar aula" action={() => duplicateLessonAction(l.id)} hrefFor={(id) => `/admin/conteudos/aulas/${id}`} />
+            <DuplicateButton size="icon-sm" label="Duplicar aula" action={() => duplicateLessonAction(l.id)} hrefPrefix="/admin/conteudos/aulas/" />
           )}
         </div>
       )}
