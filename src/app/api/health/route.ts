@@ -53,6 +53,13 @@ export async function GET(request: Request) {
         .order("created_at", { ascending: false })
         .limit(10);
       report.recentErrors = data;
+      const { data: actions } = await createAdminClient()
+        .from("audit_logs")
+        .select("created_at, action, entity_type, summary")
+        .neq("action", "system.error")
+        .order("created_at", { ascending: false })
+        .limit(25);
+      report.recentActions = actions;
     } catch {}
   }
 
