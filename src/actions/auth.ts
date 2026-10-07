@@ -24,16 +24,32 @@ export async function signInAction(_prev: ActionResult | null, formData: FormDat
     const supabase = await createClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email: input.email, password: input.password });
     if (error || !data.user) {
-      return { ok: false, error: "E-mail ou senha inválidos." };
+      if (error?.code === "email_not_confirmed") {
+        return { ok: false, error: "E-mail ainda não confirmado. No Supabase, recrie o usuário marcando “Auto Confirm User”." };
+      }
+      if (!error || error.code === "invalid_credentials") {
+        return { ok: false, error: "E-mail ou senha inválidos." };
+      }
+      console.error("[auth] signIn", error.code, error.status, error.message);
+      return { ok: false, error: `Falha ao conectar ao serviço de login (${error.code ?? error.status ?? "erro"}): ${error.message}` };
     }
 
-    const { data: profile } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from("profiles")
       .select("status, deleted_at")
       .eq("id", data.user.id)
       .maybeSingle();
 
-    if (!profile || profile.status === "inactive" || profile.deleted_at) {
+    if (profileError || !profile) {
+      await supabase.auth.signOut();
+      return {
+        ok: false,
+        error: profileError
+          ? `Login aceito, mas o banco não respondeu (${profileError.code}). Confira se o setup-completo.sql foi executado.`
+          : "Login aceito, mas seu perfil não existe. Rode o setup-completo.sql e recrie o usuário no Supabase.",
+      };
+    }
+    if (profile.status === "inactive" || profile.deleted_at) {
       await supabase.auth.signOut();
       return { ok: false, error: "Seu acesso está desativado. Procure o administrador da plataforma." };
     }
