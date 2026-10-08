@@ -9,6 +9,7 @@ export interface CollaboratorFilters {
   department?: string;
   group?: string;
   role?: string;
+  manager?: string;
   page?: number;
 }
 
@@ -30,6 +31,7 @@ export async function listCollaborators(filters: CollaboratorFilters) {
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.department) query = query.eq("department", filters.department);
   if (filters.role) query = query.eq("role_id", filters.role);
+  if (filters.manager) query = filters.manager === "none" ? query.is("manager_id", null) : query.eq("manager_id", filters.manager);
   if (filters.group) {
     const { data: members } = await supabase.from("group_members").select("user_id").eq("group_id", filters.group);
     const ids = (members ?? []).map((m) => m.user_id as string);
@@ -229,4 +231,17 @@ export async function listAllPeople() {
     .neq("status", "inactive")
     .order("full_name");
   return (data ?? []) as Pick<Profile, "id" | "full_name" | "email" | "status">[];
+}
+
+/** Pessoas que podem ser gestoras (papel gestor ou administrador). */
+export async function listManagers() {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, full_name, role_id")
+    .in("role_id", ["manager", "admin"])
+    .is("deleted_at", null)
+    .neq("status", "inactive")
+    .order("full_name");
+  return (data ?? []) as { id: string; full_name: string; role_id: string }[];
 }

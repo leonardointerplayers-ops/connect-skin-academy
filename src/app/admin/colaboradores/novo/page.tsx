@@ -4,14 +4,14 @@ import { PageHeader } from "@/components/shared/page";
 import { CollaboratorForm } from "@/components/admin/collaborator-form";
 import { inviteCollaboratorAction } from "@/actions/users";
 import { requireAdmin } from "@/lib/auth/dal";
-import { listGroups } from "@/services/users";
+import { listGroups, listManagers } from "@/services/users";
 import { isEmailConfigured } from "@/lib/env";
 
 export const metadata: Metadata = { title: "Adicionar colaborador" };
 
 export default async function NewCollaboratorPage() {
   await requireAdmin();
-  const groups = await listGroups();
+  const [groups, managers] = await Promise.all([listGroups(), listManagers()]);
   return (
     <>
       <PageHeader title="Adicionar colaborador" back={{ href: "/admin/colaboradores", label: "Colaboradores" }} />
@@ -29,7 +29,7 @@ export default async function NewCollaboratorPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CollaboratorForm action={inviteCollaboratorAction} groups={groups} mode="create" />
+          <CollaboratorForm action={inviteCollaboratorAction} groups={groups} managers={managers} mode="create" />
         </CardContent>
       </Card>
     </>

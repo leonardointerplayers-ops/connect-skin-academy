@@ -14,7 +14,7 @@ import { AvatarEditor } from "@/components/shared/avatar-editor";
 import { HealthBadge } from "@/components/admin/health-badge";
 import { CollaboratorForm } from "@/components/admin/collaborator-form";
 import { CollaboratorActions } from "@/components/admin/collaborator-actions";
-import { getCollaborator, getUserModuleProgress, getUserTimeline, listGroups } from "@/services/users";
+import { getCollaborator, getUserModuleProgress, getUserTimeline, listGroups, listManagers } from "@/services/users";
 import { updateCollaboratorAction } from "@/actions/users";
 import { requireStaff } from "@/lib/auth/dal";
 import { computeHealthScore, HEALTH_WEIGHTS } from "@/lib/analytics/health";
@@ -28,11 +28,12 @@ export default async function CollaboratorPage({ params }: PageProps<"/admin/col
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const viewer = await requireStaff();
-  const [data, modules, timeline, groups] = await Promise.all([
+  const [data, modules, timeline, groups, managers] = await Promise.all([
     getCollaborator(id),
     getUserModuleProgress(id),
     getUserTimeline(id),
     listGroups(),
+    listManagers(),
   ]);
   if (!data) notFound();
   const { profile, summary } = data;
@@ -57,6 +58,7 @@ export default async function CollaboratorPage({ params }: PageProps<"/admin/col
             </p>
             <p className="text-xs text-muted-foreground">
               {profile.email} · Entrada {formatDate(profile.joined_at)} · Último acesso {formatRelative(summary?.last_activity_at)}
+              {profile.manager_id && ` · Gestor: ${managers.find((m) => m.id === profile.manager_id)?.full_name ?? "—"}`}
             </p>
             {data.groups.length > 0 && (
               <div className="flex flex-wrap gap-1 pt-1">
@@ -189,6 +191,7 @@ export default async function CollaboratorPage({ params }: PageProps<"/admin/col
                   profile={profile}
                   groups={groups}
                   selectedGroups={data.groups.map((g) => g.id)}
+                  managers={managers}
                   mode="edit"
                 />
               </CardContent>

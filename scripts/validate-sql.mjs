@@ -7,7 +7,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const root = join(import.meta.dirname, "..");
-const migrations = ["001_schema.sql", "002_rls.sql", "003_storage.sql", "004_seed.sql"];
+const migrations = ["001_schema.sql", "002_rls.sql", "003_storage.sql", "004_seed.sql", "005_managers.sql"];
 
 const SUPABASE_STUBS = `
 create role anon nologin;
@@ -284,17 +284,42 @@ async function main() {
   const manager = (await one(`insert into auth.users (email, raw_user_meta_data) values ('gestor@empresa.com', '{"full_name":"Gustavo Gestor"}') returning id`)).id;
   await db.query(`update public.profiles set role_id = 'manager', status = 'active' where id = $1`, [manager]);
   await as(manager, async () => {
-    check("gestor lê o resumo de todos os colaboradores", (await all(`select user_id from public.v_user_learning_summary`)).length === 4);
-    const upd = await db.query(`update public.courses set title = 'hack' returning id`);
-    check("gestor NÃO edita trilhas", (upd.rows ?? []).length === 0);
+    const before = await all(`select user_id from public.v_user_learning_summary`);
+    check("gestor sem equipe vê só a si mesmo", before.length === 1 && before[0].user_id === manager, before.length);
+  });
+  // João passa a se reportar ao gestor
+  await db.query(`update public.profiles set manager_id = $1 where id = $2`, [manager, collab]);
+  await as(manager, async () => {
+    const team = await all(`select user_id from public.v_user_learning_summary`);
+    check("gestor vê a si e ao João (equipe)", team.length === 2 && team.some((t) => t.user_id === collab), team.length);
+    check("gestor NÃO vê Maria (fora da equipe)", !team.some((t) => t.user_id === other));
+    check("gestor vê tentativas do João", (await all(`select id from public.exam_attempts where user_id = $1`, [collab])).length > 0);
+    check("gestor NÃO vê tentativas da Maria", (await all(`select id from public.exam_attempts where user_id = $1`, [other])).length === 0);
+    const r = (await one(`select public.fn_get_attempt_result($1) r`, [pass.result.attempt_id])).r;
+    check("gestor revisa prova do João com gabarito", r.review_allowed === true);
     let blocked = false;
     try {
-      await db.query(`select public.fn_admin_sync_enrollments()`);
+      await db.exec(`reset role;`);
+      const mid = (await one(`select id from public.exam_attempts where user_id = $1 limit 1`, [other])).id;
+      await db.exec(`select set_config('request.jwt.claim.sub', '${manager}', false); set role authenticated;`);
+      await db.query(`select public.fn_get_attempt_result($1)`, [mid]);
     } catch {
       blocked = true;
     }
-    check("gestor NÃO executa funções administrativas", blocked);
+    check("gestor NÃO revisa prova da Maria", blocked);
+    await db.query(`update public.profiles set manager_id = $1 where id = $2`, [manager, other]);
+    const upd = await db.query(`update public.courses set title = 'hack' returning id`);
+    check("gestor NÃO edita trilhas", (upd.rows ?? []).length === 0);
+    let blockedAdmin = false;
+    try {
+      await db.query(`select public.fn_admin_sync_enrollments()`);
+    } catch {
+      blockedAdmin = true;
+    }
+    check("gestor NÃO executa funções administrativas", blockedAdmin);
   });
+  const mariaMgr = await one(`select manager_id from public.profiles where id = $1`, [other]);
+  check("gestor não altera o gestor de ninguém", mariaMgr.manager_id === null, mariaMgr);
 
   // --- Storage: acesso a arquivos privados segue a aula ---
   const matId = (await one(

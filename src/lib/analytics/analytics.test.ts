@@ -39,6 +39,7 @@ function user(overrides: Partial<UserLearningSummary>): UserLearningSummary {
     days_since_activity: null,
     overdue_items: 0,
     next_due_date: null,
+    manager_id: null,
     ...overrides,
   };
 }

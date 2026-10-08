@@ -69,16 +69,22 @@ export async function getContinueLesson() {
 
   // Próxima aula não concluída, na ordem da trilha.
   const courses = await getMyCourses();
-  for (const course of courses) {
-    const outline = await getCourseOutline(course.id);
-    for (const m of outline) {
-      if (m.state !== "unlocked" || m.status === "completed") continue;
-      const { data: lessons } = await supabase.from("lessons").select("id, title, position").eq("module_id", m.id).eq("status", "published").is("deleted_at", null).order("position");
-      const { data: done } = await supabase.from("lesson_progress").select("lesson_id").eq("user_id", uid).eq("module_id", m.id).eq("status", "completed");
-      const doneSet = new Set((done ?? []).map((d) => d.lesson_id as string));
-      const next = (lessons ?? []).find((l) => !doneSet.has(l.id as string));
-      if (next) return { lessonId: next.id as string, title: next.title as string, module: { id: m.id, title: m.title, position: m.position }, percent: 0, resumed: false };
-    }
+  const outlines = await Promise.all(courses.map((c) => getCourseOutline(c.id)));
+  const candidates = outlines.flat().filter((m) => m.state === "unlocked" && m.status !== "completed");
+  if (!candidates.length) return null;
+
+  // Duas consultas no total, em vez de duas por módulo.
+  const moduleIds = candidates.map((m) => m.id);
+  const [{ data: lessons }, { data: done }] = await Promise.all([
+    supabase.from("lessons").select("id, title, position, module_id").in("module_id", moduleIds).eq("status", "published").is("deleted_at", null),
+    supabase.from("lesson_progress").select("lesson_id").eq("user_id", uid).in("module_id", moduleIds).eq("status", "completed"),
+  ]);
+  const doneSet = new Set((done ?? []).map((d) => d.lesson_id as string));
+  for (const m of candidates) {
+    const next = (lessons ?? [])
+      .filter((l) => l.module_id === m.id && !doneSet.has(l.id as string))
+      .sort((a, b) => (a.position as number) - (b.position as number))[0];
+    if (next) return { lessonId: next.id as string, title: next.title as string, module: { id: m.id, title: m.title, position: m.position }, percent: 0, resumed: false };
   }
   return null;
 }

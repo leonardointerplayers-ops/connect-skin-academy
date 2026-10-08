@@ -50,7 +50,7 @@ export const LEARNER_NAV: NavItem[] = [
 export const ADMIN_NAV: NavItem[] = [
   { title: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
   { title: "Colaboradores", href: "/admin/colaboradores", icon: Users },
-  { title: "Grupos", href: "/admin/grupos", icon: UsersRound },
+  { title: "Grupos", href: "/admin/grupos", icon: UsersRound, adminOnly: true },
   {
     title: "Conteúdos",
     href: "/admin/conteudos",

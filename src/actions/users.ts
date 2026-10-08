@@ -25,6 +25,7 @@ function parseCollaboratorForm(formData: FormData) {
     joined_at: formData.get("joined_at") ?? undefined,
     status: formData.get("status") ?? undefined,
     group_ids: formData.getAll("group_ids").map(String).filter(Boolean),
+    manager_id: formData.get("manager_id") ?? undefined,
   };
 }
 
@@ -72,6 +73,7 @@ export async function inviteCollaboratorAction(
           area: input.area,
           company: input.company,
           role_id: input.role_id,
+          manager_id: input.manager_id,
           ...(input.joined_at ? { joined_at: input.joined_at } : {}),
           invited_at: new Date().toISOString(),
         })
@@ -111,6 +113,9 @@ export async function updateCollaboratorAction(
     const admin = await assertAdmin();
     const id = z.uuid().parse(userId);
     const input = collaboratorUpdateSchema.parse(parseCollaboratorForm(formData));
+    if (input.manager_id === id) {
+      return { ok: false, error: "Uma pessoa não pode ser gestora de si mesma.", fieldErrors: { manager_id: ["Escolha outro gestor."] } };
+    }
     if (id === admin.id && input.role_id !== "admin") {
       return { ok: false, error: "Você não pode remover o seu próprio acesso de administrador." };
     }
@@ -129,6 +134,7 @@ export async function updateCollaboratorAction(
       company: input.company,
       role_id: input.role_id,
       status: input.status,
+      manager_id: input.manager_id,
       ...(input.joined_at ? { joined_at: input.joined_at } : {}),
     };
     ensure(await supabase.from("profiles").update(patch).eq("id", id));

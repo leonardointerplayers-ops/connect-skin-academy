@@ -33,9 +33,13 @@ export default async function AdminDashboardPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Desenvolvimento da equipe"
+        eyebrow={isAdmin ? "Desenvolvimento da equipe" : "Minha equipe"}
         title={`Olá, ${firstName(profile?.full_name)} 👋`}
-        description="Visão consolidada de engajamento, aprendizado e conclusão da equipe."
+        description={
+          isAdmin
+            ? "Visão consolidada de engajamento, aprendizado e conclusão da equipe."
+            : "Engajamento, aprendizado e conclusão das pessoas que se reportam a você."
+        }
         actions={
           isAdmin && (
             <Button asChild>

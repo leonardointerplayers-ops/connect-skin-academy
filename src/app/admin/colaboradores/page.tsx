@@ -11,7 +11,7 @@ import { UserAvatar } from "@/components/shared/user-avatar";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { ProgressBar } from "@/components/shared/progress";
 import { HealthBadge } from "@/components/admin/health-badge";
-import { listCollaborators, listDepartments, listGroups } from "@/services/users";
+import { listCollaborators, listDepartments, listGroups, listManagers } from "@/services/users";
 import { computeHealthScore } from "@/lib/analytics/health";
 import { getCurrentProfile } from "@/lib/auth/dal";
 import { formatPercent, formatRelative } from "@/lib/format";
@@ -29,22 +29,25 @@ export default async function CollaboratorsPage({ searchParams }: PageProps<"/ad
     department: str(sp.department),
     group: str(sp.group),
     role: str(sp.role),
+    manager: str(sp.manager),
     page: Number(str(sp.page) ?? 1) || 1,
   };
-  const [profile, result, departments, groups] = await Promise.all([
+  const [profile, result, departments, groups, managers] = await Promise.all([
     getCurrentProfile(),
     listCollaborators(filters),
     listDepartments(),
     listGroups(),
+    listManagers(),
   ]);
   const isAdmin = profile?.role_id === "admin";
+  const managerName = new Map(managers.map((m) => [m.id, m.full_name]));
   const exportQuery = new URLSearchParams(Object.entries(filters).filter(([k, v]) => v && k !== "page") as [string, string][]).toString();
 
   return (
     <>
       <PageHeader
-        title="Colaboradores"
-        description="Cadastro, acesso e acompanhamento individual da equipe."
+        title={isAdmin ? "Colaboradores" : "Minha equipe"}
+        description={isAdmin ? "Cadastro, acesso e acompanhamento individual da equipe." : "Pessoas que se reportam a você (direta ou indiretamente)."}
         actions={
           <>
             <Button variant="outline" asChild>
@@ -80,6 +83,13 @@ export default async function CollaboratorsPage({ searchParams }: PageProps<"/ad
               <FilterSelect param="department" placeholder="Todos os departamentos" options={departments.map((d) => ({ value: d, label: d }))} />
               <FilterSelect param="group" placeholder="Todos os grupos" options={groups.map((g) => ({ value: g.id, label: g.name }))} />
               <FilterSelect param="role" placeholder="Todos os papéis" options={Object.entries(ROLE_LABELS).map(([value, label]) => ({ value, label }))} />
+              {isAdmin && (
+                <FilterSelect
+                  param="manager"
+                  placeholder="Todos os gestores"
+                  options={[{ value: "none", label: "Sem gestor" }, ...managers.map((m) => ({ value: m.id, label: m.full_name }))]}
+                />
+              )}
             </div>
           </Suspense>
 
@@ -97,6 +107,7 @@ export default async function CollaboratorsPage({ searchParams }: PageProps<"/ad
                     <TableRow>
                       <TableHead>Colaborador</TableHead>
                       <TableHead className="hidden md:table-cell">Departamento</TableHead>
+                      <TableHead className="hidden xl:table-cell">Gestor</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="w-40">Progresso</TableHead>
                       <TableHead className="hidden lg:table-cell">Nota média</TableHead>
@@ -120,6 +131,7 @@ export default async function CollaboratorsPage({ searchParams }: PageProps<"/ad
                           </Link>
                         </TableCell>
                         <TableCell className="hidden md:table-cell text-muted-foreground">{u.department ?? "—"}</TableCell>
+                        <TableCell className="hidden xl:table-cell text-muted-foreground">{u.manager_id ? (managerName.get(u.manager_id) ?? "—") : "—"}</TableCell>
                         <TableCell>
                           <StatusBadge status={u.status} />
                         </TableCell>

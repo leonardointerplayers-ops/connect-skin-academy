@@ -22,6 +22,10 @@ export async function GET(request: Request) {
       cache: "no-store",
     });
     report.authReachable = settings.status;
+    const t0 = Date.now();
+    await fetch(`${url}/auth/v1/health`, { headers: { apikey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "" }, cache: "no-store" });
+    report.dbLatencyMs = Date.now() - t0;
+    report.region = process.env.VERCEL_REGION ?? null;
   } catch (err) {
     report.authReachable = String(err);
   }

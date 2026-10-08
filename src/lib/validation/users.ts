@@ -24,6 +24,9 @@ export const collaboratorSchema = z.object({
     .optional()
     .or(z.literal("").transform(() => undefined)),
   group_ids: z.array(z.uuid()).default([]),
+  manager_id: z
+    .union([z.uuid(), z.literal(""), z.literal("none"), z.null(), z.undefined()])
+    .transform((v) => (v && v !== "none" ? v : null)),
 });
 
 export const collaboratorUpdateSchema = collaboratorSchema.omit({ email: true }).extend({

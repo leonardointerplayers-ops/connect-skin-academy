@@ -40,12 +40,14 @@ export function CollaboratorForm({
   profile,
   groups,
   selectedGroups = [],
+  managers = [],
   mode,
 }: {
   action: Action;
   profile?: Profile;
   groups: { id: string; name: string }[];
   selectedGroups?: string[];
+  managers?: { id: string; full_name: string; role_id: string }[];
   mode: "create" | "edit";
 }) {
   const [state, formAction] = useActionState(action, null);
@@ -124,10 +126,33 @@ export function CollaboratorForm({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="collaborator">Colaborador</SelectItem>
-              <SelectItem value="manager">Gestor (somente leitura)</SelectItem>
+              <SelectItem value="manager">Gestor (acompanha a própria equipe)</SelectItem>
               <SelectItem value="admin">Administrador</SelectItem>
             </SelectContent>
           </Select>
+        </div>
+        <div className="space-y-2">
+          <Label>Gestor responsável</Label>
+          <Select name="manager_id" defaultValue={profile?.manager_id ?? "none"}>
+            <SelectTrigger className="w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Sem gestor</SelectItem>
+              {managers
+                .filter((m) => m.id !== profile?.id)
+                .map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.full_name}
+                    {m.role_id === "admin" ? " (admin)" : ""}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            O gestor acompanha esta pessoa (e a equipe dela) no painel. Para aparecer aqui, cadastre a pessoa com o papel “Gestor”.
+          </p>
+          <FieldError errors={fe?.manager_id} />
         </div>
         {mode === "edit" && (
           <div className="space-y-2">

@@ -21,6 +21,7 @@ export interface Profile {
   avatar_path: string | null;
   role_id: RoleId;
   status: ProfileStatus;
+  manager_id: string | null;
   joined_at: string;
   invited_at: string | null;
   activated_at: string | null;
@@ -377,6 +378,7 @@ export interface UserLearningSummary {
   days_since_activity: number | null;
   overdue_items: number;
   next_due_date: string | null;
+  manager_id: string | null;
 }
 
 export interface ModuleStats {
