@@ -39,7 +39,8 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "2mb",
     },
   },
-  serverExternalPackages: ["exceljs", "sanitize-html"],
+  // sanitize-html NÃO pode ser externo: depende de htmlparser2 (ESM), que falha com require() na Vercel.
+  serverExternalPackages: ["exceljs"],
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

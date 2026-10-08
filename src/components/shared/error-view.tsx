@@ -1,10 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
+import { reportClientError } from "@/lib/report-client-error";
 import { Button } from "@/components/ui/button";
 
 export function ErrorView({ error, reset, home = "/" }: { error: Error & { digest?: string }; reset: () => void; home?: string }) {
+  useEffect(() => reportClientError(error), [error]);
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4 text-center">
       <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10">

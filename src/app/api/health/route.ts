@@ -49,14 +49,14 @@ export async function GET(request: Request) {
       const { data } = await createAdminClient()
         .from("audit_logs")
         .select("created_at, entity_id, summary, changes")
-        .eq("action", "system.error")
+        .in("action", ["system.error", "system.client_error"])
         .order("created_at", { ascending: false })
         .limit(10);
       report.recentErrors = data;
       const { data: actions } = await createAdminClient()
         .from("audit_logs")
         .select("created_at, action, entity_type, summary")
-        .neq("action", "system.error")
+        .not("action", "in", "(system.error,system.client_error)")
         .order("created_at", { ascending: false })
         .limit(25);
       report.recentActions = actions;
