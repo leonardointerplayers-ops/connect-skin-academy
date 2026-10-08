@@ -28,20 +28,28 @@ function revalidateContent() {
 // Trilhas
 // ---------------------------------------------------------------------------
 
-export async function createCourseAction(formData: FormData) {
-  const admin = await assertAdmin();
-  const title = z.string().trim().min(2).max(160).parse(formData.get("title"));
-  const supabase = await createClient();
-  const { data: last } = await supabase.from("courses").select("position").order("position", { ascending: false }).limit(1).maybeSingle();
-  const created = ensureOne(
-    await supabase
-      .from("courses")
-      .insert({ title, status: "draft", position: (last?.position ?? 0) + 1, created_by: admin.id, updated_by: admin.id })
-      .select("id")
-      .single(),
-  );
-  await logAudit("course.created", "course", created.id, title);
-  redirect(`/admin/conteudos/trilhas/${created.id}`);
+const titleSchema = z.string().trim().min(2, "O título precisa ter pelo menos 2 caracteres.").max(160);
+
+export async function createCourseAction(_prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  let id: string;
+  try {
+    const admin = await assertAdmin();
+    const title = titleSchema.parse(formData.get("title"));
+    const supabase = await createClient();
+    const { data: last } = await supabase.from("courses").select("position").order("position", { ascending: false }).limit(1).maybeSingle();
+    const created = ensureOne(
+      await supabase
+        .from("courses")
+        .insert({ title, status: "draft", position: (last?.position ?? 0) + 1, created_by: admin.id, updated_by: admin.id })
+        .select("id")
+        .single(),
+    );
+    id = created.id as string;
+    await logAudit("course.created", "course", id, title);
+  } catch (err) {
+    return toActionError(err);
+  }
+  redirect(`/admin/conteudos/trilhas/${id}`);
 }
 
 export async function updateCourseAction(courseId: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -110,28 +118,34 @@ export async function deleteCourseAction(courseId: string): Promise<ActionResult
 // Módulos
 // ---------------------------------------------------------------------------
 
-export async function createModuleAction(courseId: string, formData: FormData) {
-  const admin = await assertAdmin();
-  const cid = uuid.parse(courseId);
-  const title = z.string().trim().min(2).max(160).parse(formData.get("title"));
-  const supabase = await createClient();
-  const { data: last } = await supabase
-    .from("modules")
-    .select("position")
-    .eq("course_id", cid)
-    .is("deleted_at", null)
-    .order("position", { ascending: false })
-    .limit(1)
-    .maybeSingle();
-  const created = ensureOne(
-    await supabase
+export async function createModuleAction(courseId: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  let id: string;
+  try {
+    const admin = await assertAdmin();
+    const cid = uuid.parse(courseId);
+    const title = titleSchema.parse(formData.get("title"));
+    const supabase = await createClient();
+    const { data: last } = await supabase
       .from("modules")
-      .insert({ course_id: cid, title, status: "draft", position: (last?.position ?? 0) + 1, created_by: admin.id, updated_by: admin.id })
-      .select("id")
-      .single(),
-  );
-  await logAudit("module.created", "module", created.id, title);
-  redirect(`/admin/conteudos/modulos/${created.id}`);
+      .select("position")
+      .eq("course_id", cid)
+      .is("deleted_at", null)
+      .order("position", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    const created = ensureOne(
+      await supabase
+        .from("modules")
+        .insert({ course_id: cid, title, status: "draft", position: (last?.position ?? 0) + 1, created_by: admin.id, updated_by: admin.id })
+        .select("id")
+        .single(),
+    );
+    id = created.id as string;
+    await logAudit("module.created", "module", id, title);
+  } catch (err) {
+    return toActionError(err);
+  }
+  redirect(`/admin/conteudos/modulos/${id}`);
 }
 
 export async function updateModuleAction(moduleId: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -229,32 +243,38 @@ export async function duplicateModuleAction(moduleId: string): Promise<ActionRes
 // Aulas
 // ---------------------------------------------------------------------------
 
-export async function createLessonAction(moduleId: string, formData: FormData) {
-  const admin = await assertAdmin();
-  const mid = uuid.parse(moduleId);
-  const title = z.string().trim().min(2).max(160).parse(formData.get("title"));
-  const supabase = await createClient();
-  const [{ data: last }, { data: settings }] = await Promise.all([
-    supabase.from("lessons").select("position").eq("module_id", mid).is("deleted_at", null).order("position", { ascending: false }).limit(1).maybeSingle(),
-    supabase.from("app_settings").select("default_video_completion_percent").maybeSingle(),
-  ]);
-  const created = ensureOne(
-    await supabase
-      .from("lessons")
-      .insert({
-        module_id: mid,
-        title,
-        status: "draft",
-        position: (last?.position ?? 0) + 1,
-        min_video_percent: settings?.default_video_completion_percent ?? 90,
-        created_by: admin.id,
-        updated_by: admin.id,
-      })
-      .select("id")
-      .single(),
-  );
-  await logAudit("lesson.created", "lesson", created.id, title);
-  redirect(`/admin/conteudos/aulas/${created.id}`);
+export async function createLessonAction(moduleId: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  let id: string;
+  try {
+    const admin = await assertAdmin();
+    const mid = uuid.parse(moduleId);
+    const title = titleSchema.parse(formData.get("title"));
+    const supabase = await createClient();
+    const [{ data: last }, { data: settings }] = await Promise.all([
+      supabase.from("lessons").select("position").eq("module_id", mid).is("deleted_at", null).order("position", { ascending: false }).limit(1).maybeSingle(),
+      supabase.from("app_settings").select("default_video_completion_percent").maybeSingle(),
+    ]);
+    const created = ensureOne(
+      await supabase
+        .from("lessons")
+        .insert({
+          module_id: mid,
+          title,
+          status: "draft",
+          position: (last?.position ?? 0) + 1,
+          min_video_percent: settings?.default_video_completion_percent ?? 90,
+          created_by: admin.id,
+          updated_by: admin.id,
+        })
+        .select("id")
+        .single(),
+    );
+    id = created.id as string;
+    await logAudit("lesson.created", "lesson", id, title);
+  } catch (err) {
+    return toActionError(err);
+  }
+  redirect(`/admin/conteudos/aulas/${id}`);
 }
 
 export async function updateLessonAction(lessonId: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {

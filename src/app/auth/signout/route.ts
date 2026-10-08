@@ -13,7 +13,8 @@ async function signOut(request: NextRequest) {
   const target = request.nextUrl.clone();
   target.pathname = "/login";
   target.search = "";
-  if (request.nextUrl.searchParams.get("reason") === "inactive") target.searchParams.set("error", "inactive");
+  const reason = request.nextUrl.searchParams.get("reason");
+  if (reason === "inactive" || reason === "noprofile") target.searchParams.set("error", reason);
   return NextResponse.redirect(target, { status: 303 });
 }
 

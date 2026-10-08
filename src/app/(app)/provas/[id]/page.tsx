@@ -42,7 +42,8 @@ export default async function ExamIntroPage({ params }: PageProps<"/provas/[id]"
   const done = attempts.filter((a) => a.status !== "in_progress");
   const passed = done.some((a) => a.passed);
   const exhausted = e.max_attempts !== null && done.length >= e.max_attempts;
-  const questionCount = e.question_count ?? e.exam_questions?.[0]?.count ?? 0;
+  // exam_questions só é legível por staff; para o colaborador vale question_count.
+  const questionCount = e.question_count ?? (e.exam_questions?.[0]?.count || null);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -56,7 +57,7 @@ export default async function ExamIntroPage({ params }: PageProps<"/provas/[id]"
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { icon: ListChecks, label: "Questões", value: questionCount || "—" },
+          ...(questionCount ? [{ icon: ListChecks, label: "Questões", value: questionCount }] : []),
           { icon: Target, label: "Nota mínima", value: `${e.passing_score}%` },
           { icon: RotateCcw, label: "Tentativas", value: e.max_attempts ? `${done.length}/${e.max_attempts}` : `${done.length}/∞` },
           { icon: Clock, label: "Tempo", value: e.time_limit_minutes ? `${e.time_limit_minutes} min` : "Livre" },

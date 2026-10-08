@@ -29,9 +29,10 @@ export function ExamRunner({ attempt }: { attempt: AttemptPayload }) {
   const submittedRef = useRef(false);
 
   // Diferença entre o relógio do servidor e o do aparelho.
-  const [offset] = useState(() => new Date(attempt.server_now).getTime() - Date.now());
+  // Calculado só no navegador (evita divergência de hidratação no relógio).
+  const offsetRef = useRef<number | null>(null);
   const deadline = attempt.expires_at ? new Date(attempt.expires_at).getTime() : null;
-  const [remaining, setRemaining] = useState<number | null>(() => (deadline ? Math.max(0, (deadline - (Date.now() + offset)) / 1000) : null));
+  const [remaining, setRemaining] = useState<number | null>(null);
 
   const questions = attempt.questions;
   const q = questions[index];
@@ -51,6 +52,8 @@ export function ExamRunner({ attempt }: { attempt: AttemptPayload }) {
 
   useEffect(() => {
     if (!deadline) return;
+    offsetRef.current ??= new Date(attempt.server_now).getTime() - Date.now();
+    const offset = offsetRef.current;
     const t = setInterval(() => {
       const left = Math.max(0, (deadline - (Date.now() + offset)) / 1000);
       setRemaining(left);
@@ -61,7 +64,7 @@ export function ExamRunner({ attempt }: { attempt: AttemptPayload }) {
       }
     }, 1000);
     return () => clearInterval(t);
-  }, [deadline, offset, submit]);
+  }, [deadline, attempt.server_now, submit]);
 
   useEffect(() => {
     const warn = (e: BeforeUnloadEvent) => {

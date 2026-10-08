@@ -25,7 +25,7 @@ export function CoverImage({
   return (
     <div className={cn("relative overflow-hidden bg-primary", className)}>
       {src ? (
-        <Image src={src} alt={alt} fill sizes={sizes} className="object-cover" priority={priority} />
+        <Image src={src} alt={alt} fill sizes={sizes} className="object-cover" priority={priority} unoptimized />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-primary via-primary to-[oklch(0.28_0.12_275)]">
           <div aria-hidden className="absolute -right-10 -top-10 size-40 rounded-full border-[14px] border-brand-accent/40" />

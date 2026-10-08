@@ -187,11 +187,14 @@ export async function getMyBadges() {
 
 export async function getAnnouncements(limit = 10) {
   const supabase = await createClient();
+  const nowIso = new Date().toISOString();
   const { data } = await supabase
     .from("announcements")
     .select("*")
     .eq("status", "published")
     .is("deleted_at", null)
+    .lte("publish_at", nowIso)
+    .or(`expires_at.is.null,expires_at.gt.${nowIso}`)
     .order("priority", { ascending: true })
     .order("publish_at", { ascending: false })
     .limit(limit);

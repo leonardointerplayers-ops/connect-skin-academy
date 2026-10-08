@@ -153,9 +153,11 @@ export async function getUserModuleProgress(userId: string): Promise<UserModuleP
   const [{ data: modules }, { data: progress }, { data: attempts }] = await Promise.all([
     supabase
       .from("modules")
-      .select("id, title, position, course:courses!inner(title, position, status)")
+      .select("id, title, position, course:courses!inner(title, position, status, deleted_at)")
       .eq("status", "published")
-      .is("deleted_at", null),
+      .is("deleted_at", null)
+      .is("course.deleted_at", null)
+      .eq("course.status", "published"),
     supabase.from("module_progress").select("*").eq("user_id", userId),
     supabase
       .from("exam_attempts")

@@ -8,6 +8,7 @@ export const metadata: Metadata = { title: "Entrar" };
 const ERRORS: Record<string, string> = {
   link: "O link é inválido ou expirou. Solicite um novo.",
   inactive: "Seu acesso está desativado. Procure o administrador da plataforma.",
+  noprofile: "Seu usuário existe, mas o perfil não foi encontrado. Peça ao administrador para recriar seu acesso.",
 };
 
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {

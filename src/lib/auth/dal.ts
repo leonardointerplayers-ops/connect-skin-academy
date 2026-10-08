@@ -30,7 +30,11 @@ export function isStaffRole(role: RoleId | undefined | null) {
 
 export async function requireUser(): Promise<Profile> {
   const profile = await getCurrentProfile();
-  if (!profile) redirect("/login");
+  if (!profile) {
+    // Sessão válida sem perfil legível: encerrar a sessão evita loop /login <-> /.
+    if (await getSessionClaims()) redirect("/auth/signout?reason=noprofile");
+    redirect("/login");
+  }
   if (profile.status === "inactive" || profile.deleted_at) redirect("/auth/signout?reason=inactive");
   return profile;
 }

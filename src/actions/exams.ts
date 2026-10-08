@@ -6,7 +6,7 @@ import { after } from "next/server";
 import { z } from "zod";
 import { assertAdmin, assertUser } from "@/lib/auth/dal";
 import { createClient } from "@/lib/supabase/server";
-import { ensure, ensureOne, toActionError, translateDbError, type ActionResult } from "@/lib/actions";
+import { ensure, ensureOne, toActionError, type ActionResult } from "@/lib/actions";
 import { examSchema, questionSchema, type QuestionInput } from "@/lib/validation/exams";
 import { diff, logAudit } from "@/lib/audit";
 import { sendEmail } from "@/lib/email/send";
@@ -29,20 +29,26 @@ function revalidateExams(examId?: string) {
 // ---------------------------------------------------------------------------
 
 export async function createExamAction(formData: FormData) {
-  const admin = await assertAdmin();
-  const moduleId = uuid.parse(formData.get("module_id"));
-  const title = z.string().trim().min(2).max(160).parse(formData.get("title"));
-  const supabase = await createClient();
-  const res = await supabase
-    .from("exams")
-    .insert({ module_id: moduleId, title, status: "draft", created_by: admin.id, updated_by: admin.id })
-    .select("id")
-    .single();
-  if (res.error) {
-    redirect(`/admin/avaliacoes/provas/nova?modulo=${moduleId}&erro=${encodeURIComponent(translateDbError(res.error.message, res.error.code))}`);
+  const moduleRaw = String(formData.get("module_id") ?? "");
+  let target: string;
+  try {
+    const admin = await assertAdmin();
+    const moduleId = uuid.parse(moduleRaw);
+    const title = z.string().trim().min(2, "O nome precisa ter pelo menos 2 caracteres.").max(160).parse(formData.get("title"));
+    const supabase = await createClient();
+    const res = await supabase
+      .from("exams")
+      .insert({ module_id: moduleId, title, status: "draft", created_by: admin.id, updated_by: admin.id })
+      .select("id")
+      .single();
+    if (res.error) throw res.error;
+    await logAudit("exam.created", "exam", res.data.id, title);
+    target = `/admin/avaliacoes/provas/${res.data.id}`;
+  } catch (err) {
+    const message = toActionError(err).error;
+    target = `/admin/avaliacoes/provas/nova?modulo=${encodeURIComponent(moduleRaw)}&erro=${encodeURIComponent(message)}`;
   }
-  await logAudit("exam.created", "exam", res.data.id, title);
-  redirect(`/admin/avaliacoes/provas/${res.data.id}`);
+  redirect(target);
 }
 
 export async function updateExamAction(examId: string, _prev: ActionResult | null, formData: FormData): Promise<ActionResult> {
