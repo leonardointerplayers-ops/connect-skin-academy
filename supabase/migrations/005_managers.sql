@@ -279,3 +279,6 @@ create policy exam_answers_staff_select on public.exam_answers for select to aut
     or exists (select 1 from public.exam_attempts a
                where a.id = exam_answers.attempt_id and a.user_id = any ((select public.team_user_ids())::uuid[]))
   );
+
+-- Recarrega o cache de esquema da API (PostgREST).
+notify pgrst, 'reload schema';
